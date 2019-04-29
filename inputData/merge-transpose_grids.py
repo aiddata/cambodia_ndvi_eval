@@ -28,12 +28,14 @@ del adm
 
 pre_panel.drop(['cell_id'], axis = 1, inplace = True)
 
+pre_panel = pre_panel[pre_panel['urban_area']==0]
+
 
 ###
 
 ## creating province-level panels
 
-# pre_panel_sub = pre_panel.sample(1000)
+# pre_panel_sub = pre_panel.sample(100000)
 pre_panel_sub = pre_panel
 del pre_panel
 
@@ -79,6 +81,9 @@ pre_panel_sub.rename(columns = names, inplace = True)
 pre_panel_sub.rename(columns = {'Unnamed: 0': 'cell_id'}, inplace = True)
 
 panel_sub = pd.wide_to_long(pre_panel_sub, ['ndvi_', 'trt_'], i='cell_id', j='year')
+
+# add scale factor
+panel_sub['ndvi_'] = panel_sub['ndvi_'] * 0.0001
 
 panel_sub.to_csv(my_dir + "/panel.csv")
 panel_sub.to_stata(my_dir + "/panel.dta")
