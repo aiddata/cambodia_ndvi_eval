@@ -102,7 +102,7 @@ rasDf = getValuesAtPoint(indir=box_dir+"/cambodia_ndvi_eval/inputData/covariates
 
 rasDf = rasDf[['cell_id', 'dist_to_roads']]
 
-rasDf.to_csv("/Users/christianbaehr/Downloads/test.csv")
+rasDf.to_csv("/Users/christianbaehr/Downloads/test.csv", index = False)
 
 
 

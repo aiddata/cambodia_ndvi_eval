@@ -32,7 +32,7 @@ def getValuesAtPoint(indir, rasterfileList, pos, lon, lat, cell_id):
             for p in pos.iterrows():
                 x = int((p[1][lon] - x0)/w)
                 y = int((p[1][lat] - y0)/h)
-                if y > 15050 and x > 19530:
+                if y < 15050 and x < 19530:
                     val = data[y,x]
                 else:
                     val = -9999
@@ -44,7 +44,7 @@ def getValuesAtPoint(indir, rasterfileList, pos, lon, lat, cell_id):
             for p in pos.iterrows():
                 x = int((p[1][lon] - x0)/w)
                 y = int((p[1][lat] - y0)/h)
-                if y > 15050 and x > 19530:
+                if y < 15050 and x < 19530:
                     val = data[y,x]
                 else:
                     val = -9999
@@ -77,15 +77,7 @@ for j in list(range(1, 9)):
     data = data.append(temp)
 
 # I dont save the output csv to Box because the file is too large
-data.to_csv(temp_dir + "/ndvi_grid.csv", index = False)
-
-
-
-
-
-
-
-
+data.to_csv(temp_dir + "/ndvi.csv", index = False)
 
 
 
