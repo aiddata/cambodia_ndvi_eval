@@ -1,14 +1,15 @@
 
 # temp_dir <- "C:/Users/cbaehr/Downloads"
-temp_dir <- "/Users/christianbaehr/Downloads"
+# temp_dir <- "/Users/christianbaehr/Downloads"
+
 # setwd("C:/Users/cbaehr/Box Sync")
-setwd("/Users/christianbaehr/Box Sync")
+# setwd("/Users/christianbaehr/Box Sync")
 
 if(Sys.info()[1]=="Windows") {
   memory.limit(50000)
 }
 
-library(sf)
+library(ncdf4); library(raster); library(rgdal); library(sf); library(sp)
 
 ###
 
@@ -23,7 +24,6 @@ save(grid_list, file = paste0(temp_dir, "/temp_grid.RData"))
 
 ###
 
-rm(list = setdiff(ls(), "temp_dir"))
 
 plantations <- st_read("cambodia_ndvi_eval/inputData/gfw_plantations/Tree_plantations.shp", stringsAsFactors=F)[, "geometry"]
 concessions <- st_read("cambodia_ndvi_eval/inputData/odc_landConcessions/ELC.shp", stringsAsFactors=F)[, "geometry"]
@@ -46,7 +46,7 @@ for(i in 1:10) {
   
   covariate_grid <- do.call(cbind, list(grid_list, plantations_list, concessions_list, protectedAreas_list))
   covariate_grid <- as.data.frame(covariate_grid)
-  covariate_grid <- covariate_grid[, c(1:4)]
+  covariate_grid <- covariate_grid[, !grepl("geometry", names(covariate_grid))]
   names(covariate_grid) <- c("cell_id", "plantation_dummy", "concession_dummy", "protectedArea_dummy")
   
   write.csv(covariate_grid, paste0(temp_dir, "/covariates", i, ".csv"), row.names = F)
@@ -55,17 +55,146 @@ for(i in 1:10) {
 
 rm(list = setdiff(ls(), "temp_dir"))
 
-covariate_grid <- matrix(nrow = 0, ncol = 4)
 
 for(i in 1:10) {
   
   temp <- read.csv(paste0(temp_dir, "/covariates", i, ".csv"), stringsAsFactors = F)
+  
+  if(i == 1) {covariate_grid <- matrix(nrow = 0, ncol = ncol(temp))}
   
   covariate_grid <- rbind(covariate_grid, temp)
   
 }
 
 write.csv(covariate_grid, "cambodia_ndvi_eval/inputData/covariates.csv", row.names = F)
+
+rm(list = setdiff(ls(), "temp_dir"))
+
+
+###################
+
+## build temp and precip covariate grids. Done separately because of high memory demands
+
+
+## convert CRU raster to data frame of yearly mean precip
+for(i in 1999:2017) {
+  for(j in 1:12) {
+    temp <- raster(paste0("cambodia_ndvi_eval/inputData/covariates/cru_precip/cru_precip_", i, ".nc"), band = j)
+    temp <- rasterToPolygons(temp)
+    if(i == 1999 & j == 1) {
+      polys <- SpatialPolygons(unlist(temp@polygons), proj4string = CRS("+proj=longlat +datum=WGS84"))
+      ras <- temp@data
+    } else if(i != 1999 & j == 1) {
+      ras <- temp@data
+    } else {
+      ras <- cbind(ras, temp@data)
+    }
+  }
+  if(i == 1999) {
+    precip <- apply(ras, 1, mean)
+  } else if(i != 1999 & i != 2017) {
+    precip <- cbind(precip, apply(ras, 1, mean))
+  } else {
+    precip <- cbind(precip, apply(ras, 1, mean))
+    precip <- SpatialPolygonsDataFrame(Sr = polys, data = as.data.frame(precip), match.ID = F)
+    precip <- st_as_sf(precip)
+    
+  }
+}
+names(precip) <- c(paste0("precip_", 1999:2017), "geometry")
+
+
+for(i in 1:10) {
+  
+  load(paste0(temp_dir, "/temp_grid.RData"))
+  grid_list <- grid_list[[i]]
+  
+  precip_list <- st_intersects(grid_list, precip)
+  precip_list <- ifelse(!sapply(precip_list, length), NA, precip_list)
+  precip_list <- lapply(precip_list, function(x) {x[1]})
+  precip_list <- unlist(precip_list)
+  precip_list <- precip[precip_list,]
+  
+  precip_grid <- do.call(cbind, list(grid_list, precip_list))
+  precip_grid <- as.data.frame(precip_grid)
+  precip_grid <- precip_grid[, !grepl("geometry", names(precip_grid))]
+  names(precip_grid) <- c("cell_id", paste0("precip_", 1999:2017))
+  
+  write.csv(precip_grid, paste0(temp_dir, "/precip", i, ".csv"), row.names = F)
+  print(i)
+}
+
+for(i in 1:10) {
+  
+  temp <- read.csv(paste0(temp_dir, "/precip", i, ".csv"), stringsAsFactors = F)
+  
+  if(i == 1) {precip_grid <- matrix(nrow = 0, ncol = ncol(temp))}
+  
+  precip_grid <- rbind(precip_grid, temp)
+  
+}
+write.csv(precip_grid, paste0(temp_dir, "/precip.csv"), row.names = F)
+
+rm(list = setdiff(ls(), "temp_dir"))
+
+
+###
+
+## convert MODIS raster to data frame of yearly mean temperature
+for(i in 2001:2017) {
+  temp <- raster(paste0("cambodia_ndvi_eval/inputData/covariates/modis_temp/", i, "_modis.tif"))
+  temp <- rasterToPolygons(temp)
+  if(i == 2001) {
+    polys <- SpatialPolygons(unlist(temp@polygons), proj4string = CRS("+proj=longlat +datum=WGS84"))
+    ras <- temp@data
+  } else if(i != 2001 & i != 2017) {
+    ras <- cbind(ras, temp@data)
+  } else {
+    ras <- cbind(ras, temp@data)
+    temperature <- SpatialPolygonsDataFrame(Sr = polys, data = as.data.frame(ras), match.ID = F)
+    temperature <- st_as_sf(temperature)
+  }
+}
+names(temperature) <- c(paste0("temp_", 2001:2017), "geometry")
+
+
+
+for(i in 1:10) {
+  
+  load(paste0(temp_dir, "/temp_grid.RData"))
+  grid_list <- grid_list[[i]]
+  
+  temp_list <- st_intersects(grid_list, temperature)
+  temp_list <- ifelse(!sapply(temp_list, length), NA, temp_list)
+  temp_list <- lapply(temp_list, function(x) {x[1]})
+  temp_list <- unlist(temp_list)
+  temp_list <- temperature[temp_list,]
+
+  temp_grid <- do.call(cbind, list(grid_list, temp_list))
+  temp_grid <- as.data.frame(temp_grid)
+  temp_grid <- temp_grid[, !grepl("geometry", names(temp_grid))]
+  names(temp_grid) <- c("cell_id", paste0("temp_", 2001:2017))
+  
+  write.csv(temp_grid, paste0(temp_dir, "/temperature", i, ".csv"), row.names = F)
+  
+}
+
+rm(list = setdiff(ls(), "temp_dir"))
+
+
+for(i in 1:10) {
+  
+  temp <- read.csv(paste0(temp_dir, "/temperature", i, ".csv"), stringsAsFactors = F)
+  
+  if(i == 1) {temp_grid <- matrix(nrow = 0, ncol = ncol(temp))}
+  
+  temp_grid <- rbind(temp_grid, temp)
+  
+}
+
+write.csv(temp_grid, paste0(temp_dir, "/temperature.csv"), row.names = F)
+
+
 
 
 ###################
@@ -116,7 +245,6 @@ write.csv(treatment_grid, "cambodia_ndvi_eval/inputData/treatment.csv", row.name
 
 ###################
 
-
 provinces <- st_read("cambodia_ndvi_eval/inputData/KHM_ADM1/KHM_ADM1.shp", stringsAsFactors = F)
 communes <- st_read("cambodia_ndvi_eval/inputData/KHM_ADM3/KHM_ADM3.shp", stringsAsFactors = F)
 urban_extents <- st_read("cambodia_ndvi_eval/inputData/urban_extents/urban_extents.shp", stringsAsFactors = F)
@@ -142,22 +270,20 @@ for(i in 1:10) {
   # urban_list <- unlist(urban_list)
   
   adm_list <- cbind.data.frame(grid_list, province_list, commune_list, urban_list)
-  adm_list <- adm_list[, c(1, 3:5)]
+  adm_list <- adm_list[, names(adm_list) != "geometry"]
   names(adm_list) <- c("cell_id", "prov_id", "comm_id", "urban_area")
   
   write.csv(adm_list, paste0(temp_dir, "/adm", i, ".csv"), row.names = F)
   
-  
 }
 
-
 rm(list = setdiff(ls(), "temp_dir"))
-
-adm_grid <- matrix(nrow = 0, ncol = 4)
 
 for(i in 1:10) {
   
   temp <- read.csv(paste0(temp_dir, "/adm", i, ".csv"), stringsAsFactors = F)
+  
+  if(i == 1) {adm_grid <- matrix(nrow = 0, ncol = ncol(temp))}
   
   adm_grid <- rbind(adm_grid, temp)
   
