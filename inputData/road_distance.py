@@ -73,7 +73,7 @@ def getValuesAtPoint(indir, rasterfileList, pos, lon, lat, cell_id):
             for p in pos.iterrows():
                 x = int((p[1][lon] - x0)/w)
                 y = int((p[1][lat] - y0)/h)
-                if y > 15050 and x > 19530:
+                if y < 15050 and x < 19530:
                     val = data[y,x]
                 else:
                     val = -9999
@@ -85,7 +85,7 @@ def getValuesAtPoint(indir, rasterfileList, pos, lon, lat, cell_id):
             for p in pos.iterrows():
                 x = int((p[1][lon] - x0)/w)
                 y = int((p[1][lat] - y0)/h)
-                if y > 15050 and x > 19530:
+                if y < 15050 and x < 19530:
                     val = data[y,x]
                 else:
                     val = -9999
@@ -102,7 +102,7 @@ rasDf = getValuesAtPoint(indir=box_dir+"/cambodia_ndvi_eval/inputData/covariates
 
 rasDf = rasDf[['cell_id', 'dist_to_roads']]
 
-rasDf.to_csv("/Users/christianbaehr/Downloads/test.csv", index = False)
+rasDf.to_csv(temp_dir+"/dist_to_roads.csv", index = False)
 
 
 
