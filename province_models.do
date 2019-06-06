@@ -2,8 +2,7 @@
 clear all
 set more off
 set segmentsize 2g
-set min_memory 16g
-set max_memory 70g
+set min_memory 32g
 
 * global project "/Users/christianbaehr/Downloads/province_panels"
 * global project "C:/Users/cbaehr/Downloads/province_panels"
@@ -84,8 +83,7 @@ foreach prov of local provs {
 	
 	
 	rm "$results/main_models`prov'.txt"
-	rm "$results/robsutness_models`prov'.txt"
-	
+	rm "$results/robustness_models`prov'.txt"	
 	}
 
 	
