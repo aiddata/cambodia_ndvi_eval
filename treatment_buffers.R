@@ -10,6 +10,12 @@ villages <- st_read(paste0(box_dir, "/cambodia_ndvi_eval/inputData/village_shape
 villages$VILL_CODE <- as.integer(villages$VILL_CODE)
 villages <- villages[, c("VILL_CODE", "geometry")]
 
+## read in multi buffered village data and format
+multi_villages <- st_read(paste0(box_dir, "/cambodia_ndvi_eval/inputData/village_shapefiles/multi_buffered_villages/multi_buffered_villages.shp"),
+                    stringsAsFactors=F)
+multi_villages$VILL_CODE <- as.integer(multi_villages$VILL_CODE)
+multi_villages <- multi_villages[, c("VILL_CODE", "mrb_dist", "geometry")]
+
 ## read in PID treatment data
 pid <- read.csv(paste0(box_dir, "/cambodia_ndvi_eval/inputData/pid.csv"), stringsAsFactors = F)
 ## collapse PID so there are no rows with duplicate village IDs
@@ -31,6 +37,22 @@ treatment <- SpatialPolygonsDataFrame(Sr=polys, data = treatment)
 
 ## write treatment shape data to a shapefile
 # writeOGR(treatment[, names(treatment)!="geometry"], paste0(box_dir, "/cambodia_ndvi_eval/inputData/village_shapefiles/buf_trt_villages/buf_trt_villages.shp"),
+#          layer = "vill_code", driver = "ESRI Shapefile")
+
+#########
+
+## merge PID data with village polygons (buffers)
+multi_treatment <- merge(temp, multi_villages, by.x = "V1", by.y = "VILL_CODE")
+names(multi_treatment) <- c("vill_code", "end_years", "dist", "geometry")
+
+## convert geometry to "sp" class
+multi_polys <- as_Spatial(multi_treatment$geometry, IDs = as.character(1:nrow(multi_treatment)))
+
+## convert treatment shape data to "SpatialPointsDataFrame"
+multi_treatment <- SpatialPolygonsDataFrame(Sr=multi_polys, data = multi_treatment)
+
+## write treatment shape data to a shapefile
+# writeOGR(multi_treatment[, names(multi_treatment)!="geometry"], paste0(box_dir, "/cambodia_ndvi_eval/inputData/village_shapefiles/multi_buf_trt_villages/multi_buf_trt_villages.shp"),
 #          layer = "vill_code", driver = "ESRI Shapefile")
 
 ## create a secondary shapefile with dissolved buffers for generating the grid

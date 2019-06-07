@@ -11,7 +11,8 @@
 # protected areas shapefile (in a folder called "protected_areas"), as well as the roads
 # shapefile
 
-working_dir = '/sciclone/home20/cbaehr/cambodia_gie/data'
+# working_dir = '/sciclone/home20/cbaehr/cambodia_gie/data'
+working_dir = 'C:/Users/cbaehr/Downloads'
 
 # overwrite output files?
 overwrite = True
@@ -75,6 +76,19 @@ def getValuesAtPoint(indir, rasterfileList, pos, lon, lat, cell_id):
     return df
 
 grid = pd.read_csv(working_dir+'/empty_grid.csv')
+
+##################################################
+
+rasters = ['ndvi_'+str(year) for year in range(1999, 2019)]
+
+ndvi = getValuesAtPoint(indir=working_dir+'/ndvi', rasterfileList=rasters, pos=grid, lon='lon', lat='lat', cell_id='cell_id')
+
+full_grid = pd.concat([grid['cell_id'].reset_index(drop=True), ndvi.drop(['cell_id','x','y'], axis=1).reset_index(drop=True)], axis=1)
+
+del ndvi
+
+if overwrite:
+   full_grid.to_csv(working_dir+'/pre_panel.csv', index=False)
 
 ##################################################
 
@@ -146,7 +160,6 @@ if overwrite:
 
 road_distance = getValuesAtPoint(indir=working_dir, rasterfileList=['road_distance'], pos=grid, lon='lon', lat='lat', cell_id='cell_id')
 
-
 full_grid = pd.concat([full_grid.reset_index(drop=True), road_distance['road_distance'].reset_index(drop=True)], axis=1)
 
 del road_distance
@@ -177,16 +190,96 @@ year_dicts = list(map(build, treatment_grid))
 treatment = pd.DataFrame(year_dicts)
 treatment = treatment.fillna(0)
 
+for i in range(2003, 2019):
+    if str(i) not in treatment.columns:
+        treatment[str(i)] = 0
+
 treatment = treatment.apply(np.cumsum, axis=1)
 
 treatment.columns = ['trt_'+str(i) for i in range(2003, 2019)]
-
 
 full_grid = pd.concat([full_grid.reset_index(drop=True), treatment.reset_index(drop=True)], axis=1)
 
 del treatment, treatment_grid
 
-if overwite:
+###
+
+multi_treatment = geopandas.read_file(working_dir+'/multi_buf_trt_villages/multi_buf_trt_villages.shp')
+
+treatment_grid_1k = geopandas.sjoin(gdf, multi_treatment[multi_treatment['dist']=='1000'], how='left', op='intersects')
+treatment_grid_1k = treatment_grid_1k[['cell_id', 'end_years']]
+treatment_grid_1k['end_years'] = treatment_grid_1k['end_years'].fillna('2002')
+treatment_grid_1k = treatment_grid_1k.pivot_table(['end_years'], 'cell_id', aggfunc='|'.join, dropna=False, fill_value=np.nan)
+treatment_grid_1k = treatment_grid_1k['end_years'].tolist()
+
+year_dicts = list(map(build, treatment_grid_1k))
+treatment_1k = pd.DataFrame(year_dicts)
+treatment_1k.drop(['2002'], axis=1, inplace=True)
+treatment_1k = treatment_1k.fillna(0)
+
+for i in range(2003, 2019):
+    if str(i) not in treatment_1k.columns:
+        treatment_1k[str(i)] = 0
+
+treatment_1k = treatment_1k.reindex(sorted(treatment_1k.columns), axis=1)
+treatment_1k = treatment_1k.apply(np.cumsum, axis=1)
+treatment_1k.columns = ['trt1k_'+str(i) for i in range(2003, 2019)]
+
+full_grid = pd.concat([full_grid.reset_index(drop=True), treatment_1k.reset_index(drop=True)], axis=1)
+
+del treatment_grid_1k, treatment_1k
+
+treatment_grid_2k = geopandas.sjoin(gdf, multi_treatment[multi_treatment['dist']=='2000'], how='left', op='intersects')
+treatment_grid_2k = treatment_grid_2k[['cell_id', 'end_years']]
+treatment_grid_2k['end_years'] = treatment_grid_2k['end_years'].fillna('2002')
+treatment_grid_2k = treatment_grid_2k.pivot_table(['end_years'], 'cell_id', aggfunc='|'.join, dropna=False, fill_value=np.nan)
+treatment_grid_2k = treatment_grid_2k['end_years'].tolist()
+
+year_dicts = list(map(build, treatment_grid_2k))
+treatment_2k = pd.DataFrame(year_dicts)
+treatment_2k.drop(['2002'], axis=1, inplace=True)
+treatment_2k = treatment_2k.fillna(0)
+
+for i in range(2003, 2019):
+    if str(i) not in treatment_2k.columns:
+        treatment_2k[str(i)] = 0
+
+treatment_2k = treatment_2k.reindex(sorted(treatment_2k.columns), axis=1)
+treatment_2k = treatment_2k.apply(np.cumsum, axis=1)
+treatment_2k.columns = ['trt2k_'+str(i) for i in range(2003, 2019)]
+
+full_grid = pd.concat([full_grid.reset_index(drop=True), treatment_2k.reset_index(drop=True)], axis=1)
+
+del treatment_grid_2k, treatment_2k
+
+treatment_grid_3k = geopandas.sjoin(gdf, multi_treatment[multi_treatment['dist']=='3000'], how='left', op='intersects')
+treatment_grid_3k = treatment_grid_3k[['cell_id', 'end_years']]
+treatment_grid_3k['end_years'] = treatment_grid_3k['end_years'].fillna('2002')
+treatment_grid_3k = treatment_grid_3k.pivot_table(['end_years'], 'cell_id', aggfunc='|'.join, dropna=False, fill_value=np.nan)
+treatment_grid_3k = treatment_grid_3k['end_years'].tolist()
+
+year_dicts = list(map(build, treatment_grid_3k))
+treatment_3k = pd.DataFrame(year_dicts)
+treatment_3k.drop(['2002'], axis=1, inplace=True)
+treatment_3k = treatment_3k.fillna(0)
+
+for i in range(2003, 2019):
+    if str(i) not in treatment_3k.columns:
+        treatment_3k[str(i)] = 0
+
+treatment_3k = treatment_3k.reindex(sorted(treatment_3k.columns), axis=1)
+treatment_3k = treatment_3k.apply(np.cumsum, axis=1)
+treatment_3k.columns = ['trt3k_'+str(i) for i in range(2003, 2019)]
+
+full_grid = pd.concat([full_grid.reset_index(drop=True), treatment_3k.reset_index(drop=True)], axis=1)
+
+del treatment_grid_3k, treatment_3k
+
+###
+
+del year_dicts, multi_treatment
+
+if overwrite:
     full_grid.to_csv(working_dir+'/pre_panel.csv', index=False)
 
 #################################################
@@ -211,13 +304,16 @@ if overwrite:
 
 for i in range(1999, 2003):
     full_grid['trt_'+str(i)] = 0
+    full_grid['trt1k_'+str(i)] = 0
+    full_grid['trt2k_'+str(i)] = 0
+    full_grid['trt3k_'+str(i)] = 0
 
 for i in list(range(1999, 2001))+[2018]:
     full_grid['temp_'+str(i)] = 'NA'
 
 full_grid['precip_2018'] = 'NA'
 
-new_names = ['cell_id', 'commune', 'province', 'plantation', 'concession', 'protected_area', 'road_distance'] + ['ndvi_' + str(i) for i in range(1999, 2019)] + ['trt_' + str(i) for i in range(1999, 2019)] + ['temp_' + str(i) for i in range(1999, 2019)] + ['precip_' + str(i) for i in range(1999, 2019)]
+new_names = ['cell_id', 'commune', 'province', 'plantation', 'concession', 'protected_area', 'road_distance'] + ['ndvi_' + str(i) for i in range(1999, 2019)] + ['trt_' + str(i) for i in range(1999, 2019)] + ['trt1k_' + str(i) for i in range(1999, 2019)] + ['trt2k_' + str(i) for i in range(1999, 2019)] + ['trt3k_' + str(i) for i in range(1999, 2019)] + ['temp_' + str(i) for i in range(1999, 2019)] + ['precip_' + str(i) for i in range(1999, 2019)]
 
 full_grid = full_grid[new_names]
 
@@ -230,22 +326,28 @@ if overwrite:
 headers = [str(i) for i in range(1999, 2019)]
 ndvi_index = ['ndvi' in i for i in full_grid.columns]
 trt_index = ['trt' in i for i in full_grid.columns]
+trt1k_index = ['trt1k' in i for i in full_grid.columns]
+trt2k_index = ['trt2k' in i for i in full_grid.columns]
+trt3k_index = ['trt3k' in i for i in full_grid.columns]
 temp_index = ['temp' in i for i in full_grid.columns]
 precip_index = ['precip' in i for i in full_grid.columns]
 
 del full_grid
 
 with open(working_dir+'/pre_panel.csv') as f, open(working_dir+'/panel.csv', 'w') as f2:
-    a=f2.write('cell_id,year,commune,province,plantation,concession,protected_area,road_distance,ndvi,trt,temp,precip\n')
+    a=f2.write('cell_id,year,commune,province,plantation,concession,protected_area,road_distance,ndvi,trt,trt1k,trt2k,trt3k,temp,precip\n')
     for i, line in enumerate(f):
         if i != 0:
             x = line.strip().split(',')
             cell, commune, province, plantation, concession, protected, distance = x[0:7]
             ndvi = list(itertools.compress(x, ndvi_index))
             trt = list(itertools.compress(x, trt_index))
+            trt1k = list(itertools.compress(x, trt1k_index))
+            trt2k = list(itertools.compress(x, trt2k_index))
+            trt3k = list(itertools.compress(x, trt3k_index))
             temp = list(itertools.compress(x, temp_index))
             precip = list(itertools.compress(x, precip_index))
-            for year, ndvi_out, trt_out, temp_out, precip_out in zip(headers, ndvi, trt, temp, precip):
-                a=f2.write(','.join([cell, year, commune, province, plantation, concession, protected, distance, ndvi_out, trt_out, temp_out, precip_out])+'\n')
+            for year, ndvi_out, trt_out, trt1k_out, trt2k_out, trt3k_out, temp_out, precip_out in zip(headers, ndvi, trt, trt1k, trt2k, trt3k, temp, precip):
+                a=f2.write(','.join([cell, year, commune, province, plantation, concession, protected, distance, ndvi_out, trt_out, trt1k_out, trt2k_out, trt3k_out, temp_out, precip_out])+'\n')
 
 
