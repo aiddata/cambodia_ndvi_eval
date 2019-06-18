@@ -11,8 +11,8 @@
 # protected areas shapefile (in a folder called "protected_areas"), as well as the roads
 # shapefile
 
-# working_dir = '/sciclone/home20/cbaehr/cambodia_gie/data'
-working_dir = 'C:/Users/cbaehr/Downloads'
+working_dir = '/sciclone/home20/cbaehr/cambodia_gie/data'
+# working_dir = 'C:/Users/cbaehr/Downloads'
 
 # overwrite output files?
 overwrite = True
@@ -221,7 +221,7 @@ for i in range(2003, 2019):
     if str(i) not in treatment_1k.columns:
         treatment_1k[str(i)] = 0
 
-treatment_1k = treatment_1k.reindex(sorted(treatment_1k.columns), axis=1)
+treatment_1k = treatment_1k.reindex(columns=sorted(treatment_1k.columns))
 treatment_1k = treatment_1k.apply(np.cumsum, axis=1)
 treatment_1k.columns = ['trt1k_'+str(i) for i in range(2003, 2019)]
 
@@ -244,7 +244,7 @@ for i in range(2003, 2019):
     if str(i) not in treatment_2k.columns:
         treatment_2k[str(i)] = 0
 
-treatment_2k = treatment_2k.reindex(sorted(treatment_2k.columns), axis=1)
+treatment_2k = treatment_2k.reindex(columns=sorted(treatment_2k.columns))
 treatment_2k = treatment_2k.apply(np.cumsum, axis=1)
 treatment_2k.columns = ['trt2k_'+str(i) for i in range(2003, 2019)]
 
@@ -267,7 +267,7 @@ for i in range(2003, 2019):
     if str(i) not in treatment_3k.columns:
         treatment_3k[str(i)] = 0
 
-treatment_3k = treatment_3k.reindex(sorted(treatment_3k.columns), axis=1)
+treatment_3k = treatment_3k.reindex(columns=sorted(treatment_3k.columns))
 treatment_3k = treatment_3k.apply(np.cumsum, axis=1)
 treatment_3k.columns = ['trt3k_'+str(i) for i in range(2003, 2019)]
 
