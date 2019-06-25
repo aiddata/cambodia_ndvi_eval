@@ -119,6 +119,20 @@ if overwrite:
 
 ####################################################
 
+rasters = ['ntl_'+str(year) for year in range(1999, 2014)]
+
+ntl = getValuesAtPoint(indir=working_dir+'/ntl', rasterfileList=rasters, pos=grid, lon='lon', lat='lat', cell_id='cell_id')
+
+
+full_grid = pd.concat([full_grid.reset_index(drop=True), ntl.drop(['cell_id','x','y'], axis=1).reset_index(drop=True)], axis=1)
+
+del ntl
+
+if overwrite:
+    full_grid.to_csv(working_dir+'/pre_panel.csv', index=False)
+
+####################################################
+
 plantations = fiona.open(working_dir+'/plantations/plantations.shp')
 plantations = plantations[0]
 plantations = shape(plantations['geometry'])
@@ -313,7 +327,10 @@ for i in list(range(1999, 2001))+[2018]:
 
 full_grid['precip_2018'] = 'NA'
 
-new_names = ['cell_id', 'commune', 'province', 'plantation', 'concession', 'protected_area', 'road_distance'] + ['ndvi_' + str(i) for i in range(1999, 2019)] + ['trt_' + str(i) for i in range(1999, 2019)] + ['trt1k_' + str(i) for i in range(1999, 2019)] + ['trt2k_' + str(i) for i in range(1999, 2019)] + ['trt3k_' + str(i) for i in range(1999, 2019)] + ['temp_' + str(i) for i in range(1999, 2019)] + ['precip_' + str(i) for i in range(1999, 2019)]
+for i in range(2014, 2019):
+	full_grid['ntl_'+str(i)] = 'NA'
+
+new_names = ['cell_id', 'commune', 'province', 'plantation', 'concession', 'protected_area', 'road_distance'] + ['ndvi_' + str(i) for i in range(1999, 2019)] + ['trt_' + str(i) for i in range(1999, 2019)] + ['trt1k_' + str(i) for i in range(1999, 2019)] + ['trt2k_' + str(i) for i in range(1999, 2019)] + ['trt3k_' + str(i) for i in range(1999, 2019)] + ['temp_' + str(i) for i in range(1999, 2019)] + ['precip_' + str(i) for i in range(1999, 2019)] + ['ntl_' + str(i) for i in range(1999, 2019)]
 
 full_grid = full_grid[new_names]
 
@@ -331,11 +348,13 @@ trt2k_index = ['trt2k' in i for i in full_grid.columns]
 trt3k_index = ['trt3k' in i for i in full_grid.columns]
 temp_index = ['temp' in i for i in full_grid.columns]
 precip_index = ['precip' in i for i in full_grid.columns]
+ntl_index = ['ntl' in i for i in full_grid.columns]
+
 
 del full_grid
 
 with open(working_dir+'/pre_panel.csv') as f, open(working_dir+'/panel.csv', 'w') as f2:
-    a=f2.write('cell_id,year,commune,province,plantation,concession,protected_area,road_distance,ndvi,trt,trt1k,trt2k,trt3k,temp,precip\n')
+    a=f2.write('cell_id,year,commune,province,plantation,concession,protected_area,road_distance,ndvi,trt,trt1k,trt2k,trt3k,temp,precip,ntl\n')
     for i, line in enumerate(f):
         if i != 0:
             x = line.strip().split(',')
@@ -347,7 +366,8 @@ with open(working_dir+'/pre_panel.csv') as f, open(working_dir+'/panel.csv', 'w'
             trt3k = list(itertools.compress(x, trt3k_index))
             temp = list(itertools.compress(x, temp_index))
             precip = list(itertools.compress(x, precip_index))
-            for year, ndvi_out, trt_out, trt1k_out, trt2k_out, trt3k_out, temp_out, precip_out in zip(headers, ndvi, trt, trt1k, trt2k, trt3k, temp, precip):
-                a=f2.write(','.join([cell, year, commune, province, plantation, concession, protected, distance, ndvi_out, trt_out, trt1k_out, trt2k_out, trt3k_out, temp_out, precip_out])+'\n')
+            ntl = list(itertools.compress(x, ntl_index))
+            for year, ndvi_out, trt_out, trt1k_out, trt2k_out, trt3k_out, temp_out, precip_out, ntl_out in zip(headers, ndvi, trt, trt1k, trt2k, trt3k, temp, precip, ntl):
+                a=f2.write(','.join([cell, year, commune, province, plantation, concession, protected, distance, ndvi_out, trt_out, trt1k_out, trt2k_out, trt3k_out, temp_out, precip_out, ntl_out])+'\n')
 
 
