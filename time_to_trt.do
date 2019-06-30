@@ -8,11 +8,6 @@ set min_memory 16g
 global data "/sciclone/home20/cbaehr/cambodia_gie/data"
 global results "/sciclone/home20/cbaehr/cambodia_gie/results"
 
-
-*global data "C:/Users/cbaehr/Desktop"
-*global results "C:/Users/cbaehr/Desktop"
-
-
 reghdfe, compile
 
 import delimited "$data/panel.csv", clear

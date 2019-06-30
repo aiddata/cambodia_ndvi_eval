@@ -36,15 +36,19 @@ replace protected_area = "1" if protected_area == "True"
 replace protected_area = "0" if protected_area == "False"
 destring protected_area, replace
 
-replace temp = "." if temp=="NA"
-destring temp, replace
+local var "temp precip ntl"
 
-replace precip = "." if precip=="NA"
-destring precip, replace
+foreach i of local var {
+
+	capture confirm string variable `i'
+	if !_rc {
+		replace `i' = "." if `i'=="NA"
+		destring `i', replace
+	}
+	
+}
+
 replace precip = . if precip>1000 | precip==-1
-
-replace ntl = "." if ntl=="NA"
-destring ntl, replace
 
 compress
 
@@ -135,7 +139,7 @@ rm "$results/robsutness_models.txt"
 
 *** correlate trt bins w/ baseline NDVI ***
 
-corr baseline_ndvi trt1k trt2k trt3k
+corr baseline_ndvi trt1k trt2k trt3k if year==20
 
 *** change in ndvi histogram ***
 
@@ -145,6 +149,12 @@ hist ndvi_diff if year==2, bin(20) title("Change in NDVI from first year to last
 	xtitle("NDVI[last year]-NDVI[first year]") saving("$results\ndvi_diff.gph", replace)
 
 drop ndvi_diff
+
+* residual histogram
+
+reghdfe ndvi, cluster(commune year) absorb(cell_id year) res(resid)
+hist resid, saving("$results/residuals.gph", replace)
+drop resid
 
 *** nighttime lights work ***
 
