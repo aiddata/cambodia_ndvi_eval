@@ -73,4 +73,4 @@ coefplot, xline(5) yline(0) vertical omit base recast(line) ///
 	saving("$results/time_to_trt1.gph", replace) ///
 	keep(26.years_to_trt1 27.years_to_trt1 28.years_to_trt1 29.years_to_trt1 30.years_to_trt1 31.years_to_trt1 32.years_to_trt1 33.years_to_trt1 34.years_to_trt1 35.years_to_trt1 36.years_to_trt1 37.years_to_trt1 38.years_to_trt1 39.years_to_trt1 40.years_to_trt1)
 
-	
+

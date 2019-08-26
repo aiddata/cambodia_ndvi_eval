@@ -7,12 +7,12 @@ set min_memory 16g
 * global data "/sciclone/home20/cbaehr/cambodia_gie/data"
 * global results "/sciclone/home20/cbaehr/cambodia_gie/results"
 
-global data "C:/Users/cbaehr/Downloads"
-global results "C:/Users/cbaehr/Downloads"
+global data "/Users/christianbaehr/Desktop"
+global results "/Users/christianbaehr/Desktop"
 
-reghdfe, compile
+* reghdfe, compile
 
-import delimited "$data/panel.csv", clear
+import delimited "$data/test_panel.csv", clear
 
 egen t = group(cell_id)
 replace cell_id = t
@@ -48,6 +48,8 @@ foreach i of local var {
 	
 }
 
+bysort cell_id (year): gen ndvi_pretrend = ndvi[4] - ndvi[1]
+
 replace precip = . if precip>1000 | precip==-1
 
 compress
@@ -81,6 +83,12 @@ capture quietly reghdfe ndvi trt temp precip c.trt#c.(baseline_ndvi plantation c
 outreg2 using "$results/main_models.doc", append noni nocons addtext("Year FEs", Y, "Grid cell FEs", Y)
 
 capture quietly reghdfe ndvi trt temp precip c.trt#c.(baseline_ndvi road_distance plantation concession protected_area), cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/main_models.doc", append noni nocons addtext("Year FEs", Y, "Grid cell FEs", Y)
+
+capture quietly reghdfe ndvi trt temp precip ndvi_pretrend, cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/main_models.doc", append noni nocons addtext("Year FEs", Y, "Grid cell FEs", Y)
+
+capture quietly reghdfe ndvi trt temp precip c.trt#c.(baseline_ndvi road_distance plantation concession protected_area) ndvi_pretrend, cluster(commune year) absorb(cell_id year)
 outreg2 using "$results/main_models.doc", append noni nocons addtext("Year FEs", Y, "Grid cell FEs", Y)
 
 
@@ -279,8 +287,39 @@ outreg2 using "$results/main_models_splittrt_neverlit.doc", append noni nocons a
 capture quietly reghdfe ndvi trt1k trt2k trt3k temp precip c.trt#c.(baseline_ndvi road_distance plantation concession protected_area) if ever_lit == 0, cluster(commune year) absorb(cell_id year)
 outreg2 using "$results/main_models_splittrt_neverlit.doc", append noni nocons addtext("Year FEs", Y, "Grid cell FEs", Y)
 
+***
 
+* time to treatment dummies
 
+egen year_min = min(year) if trt1k > 0, by(cell_id)
+egen first_trt = mean(year_min), by(cell_id)
+gen time_to_trt1k = year - first_trt
+gen time_to_trt1k_dummy = (time_to_trt1k >= 0)
+
+drop year_min first_trt
+
+egen year_min = min(year) if trt2k > 0, by(cell_id)
+egen first_trt = mean(year_min), by(cell_id)
+gen time_to_trt2k = year - first_trt
+gen time_to_trt2k_dummy = (time_to_trt2k >= 0)
+
+drop year_min first_trt
+
+egen year_min = min(year) if trt3k > 0, by(cell_id)
+egen first_trt = mean(year_min), by(cell_id)
+gen time_to_trt3k = year - first_trt
+gen time_to_trt3k_dummy = (time_to_trt3k >= 0)
+
+drop year_min first_trt
+
+reghdfe ndvi time_to_trt1k c.time_to_trt1k#i.time_to_trt1k_dummy temp precip, cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/time_to_trt.doc", replace noni nocons addtext("Year FEs", Y, "Grid cell FEs", Y)
+
+reghdfe ndvi time_to_trt2k c.time_to_trt2k#i.time_to_trt2k_dummy temp precip, cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/time_to_trt.doc", append noni nocons addtext("Year FEs", Y, "Grid cell FEs", Y)
+
+reghdfe ndvi time_to_trt3k c.time_to_trt3k#i.time_to_trt3k_dummy temp precip, cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/time_to_trt.doc", append noni nocons addtext("Year FEs", Y, "Grid cell FEs", Y)
 
 
 
