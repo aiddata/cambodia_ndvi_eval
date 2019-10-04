@@ -10,13 +10,9 @@ global results "/sciclone/home20/cbaehr/cambodia_gie/results"
 * global data "/Users/christianbaehr/Desktop"
 * global results "/Users/christianbaehr/Desktop"
 
-* reghdfe, compile
+reghdfe, compile
 
 import delimited "$data/panel.csv", clear
-
-* egen t = group(cell_id)
-* replace cell_id = t
-* drop t
 
 replace ndvi = . if ndvi == -9999 | ndvi == -10000
 replace ndvi = ndvi * 0.0001
@@ -51,13 +47,14 @@ foreach i of local var {
 bysort cell_id (year): gen ndvi_pretrend = ndvi[4] - ndvi[1]
 
 replace precip = . if precip>1000 | precip==-1
+replace temp = . if temp==0
 
 compress
 
 drop if missing(ndvi) | missing(trt) | missing(commune)
 
-outreg2 using "$results/ndvi_stats.doc", replace sum(log)
-rm "$results/ndvi_stats.txt"
+* outreg2 using "$results/ndvi_stats.doc", replace sum(log)
+* rm "$results/ndvi_stats.txt"
 
 *** main models ***
 
@@ -82,13 +79,10 @@ outreg2 using "$results/main_models.doc", append noni nocons drop(temp precip) a
 capture quietly reghdfe ndvi trt temp precip c.trt#c.(baseline_ndvi plantation concession protected_area), cluster(commune year) absorb(cell_id year)
 outreg2 using "$results/main_models.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
 
+capture quietly reghdfe ndvi trt temp precip c.trt#c.(road_distance protected_area), cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/main_models.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
+
 capture quietly reghdfe ndvi trt temp precip c.trt#c.(baseline_ndvi road_distance plantation concession protected_area), cluster(commune year) absorb(cell_id year)
-outreg2 using "$results/main_models.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
-
-capture quietly reghdfe ndvi trt temp precip ndvi_pretrend, cluster(commune year) absorb(cell_id year)
-outreg2 using "$results/main_models.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
-
-capture quietly reghdfe ndvi trt temp precip c.trt#c.(baseline_ndvi road_distance plantation concession protected_area) ndvi_pretrend, cluster(commune year) absorb(cell_id year)
 outreg2 using "$results/main_models.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
 
 rm "$results/main_models.txt"
@@ -115,6 +109,9 @@ outreg2 using "$results/main_models_splittrt.doc", append noni nocons drop(temp 
 	
 capture quietly reghdfe ndvi trt1k trt2k trt3k temp precip c.trt#c.(plantation concession protected_area), cluster(commune year) absorb(cell_id year)
 outreg2 using "$results/main_models_splittrt.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
+
+capture quietly reghdfe ndvi trt1k trt2k trt3k temp precip c.trt#c.(road_distance protected_area), cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/main_models_splittrt.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
 	
 capture quietly reghdfe ndvi trt1k trt2k trt3k temp precip c.trt#c.(baseline_ndvi road_distance plantation concession protected_area), cluster(commune year) absorb(cell_id year)
 outreg2 using "$results/main_models_splittrt.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
@@ -133,7 +130,7 @@ outreg2 using "$results/robustness_models.doc", replace noni nocons drop(temp pr
 capture quietly reghdfe ndvi trt temp precip c.trt_dummy#c.baseline_ndvi, cluster(commune year) absorb(cell_id year)
 outreg2 using "$results/robustness_models.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
 
-rm "$results/robsutness_models.txt"
+rm "$results/robustness_models.txt"
 
 *** correlate trt bins w/ baseline NDVI ***
 
@@ -181,6 +178,9 @@ outreg2 using "$results/main_models_everlit.doc", append noni nocons drop(temp p
 capture quietly reghdfe ndvi trt temp precip c.trt#c.(baseline_ndvi plantation concession protected_area) if ever_lit == 1, cluster(commune year) absorb(cell_id year)
 outreg2 using "$results/main_models_everlit.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
 
+capture quietly reghdfe ndvi trt temp precip c.trt#c.(road_distance protected_area) if ever_lit == 1, cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/main_models_everlit.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
+
 capture quietly reghdfe ndvi trt temp precip c.trt#c.(baseline_ndvi road_distance plantation concession protected_area) if ever_lit == 1, cluster(commune year) absorb(cell_id year)
 outreg2 using "$results/main_models_everlit.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
 
@@ -213,6 +213,9 @@ capture quietly reghdfe ndvi trt1k trt2k trt3k temp precip c.trt#c.road_distance
 outreg2 using "$results/main_models_splittrt_everlit.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
 	
 capture quietly reghdfe ndvi trt1k trt2k trt3k temp precip c.trt#c.(plantation concession protected_area) if ever_lit == 1, cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/main_models_splittrt_everlit.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
+
+capture quietly reghdfe ndvi trt1k trt2k trt3k temp precip c.trt#c.(road_distance protected_area) if ever_lit == 1, cluster(commune year) absorb(cell_id year)
 outreg2 using "$results/main_models_splittrt_everlit.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
 	
 capture quietly reghdfe ndvi trt1k trt2k trt3k temp precip c.trt#c.(baseline_ndvi road_distance plantation concession protected_area) if ever_lit == 1, cluster(commune year) absorb(cell_id year)
@@ -249,6 +252,9 @@ outreg2 using "$results/main_models_neverlit.doc", append noni nocons drop(temp 
 capture quietly reghdfe ndvi trt temp precip c.trt#c.(baseline_ndvi plantation concession protected_area) if ever_lit == 0, cluster(commune year) absorb(cell_id year)
 outreg2 using "$results/main_models_neverlit.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
 
+capture quietly reghdfe ndvi trt temp precip c.trt#c.(road_distance protected_area) if ever_lit == 0, cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/main_models_neverlit.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
+
 capture quietly reghdfe ndvi trt temp precip c.trt#c.(baseline_ndvi road_distance plantation concession protected_area) if ever_lit == 0, cluster(commune year) absorb(cell_id year)
 outreg2 using "$results/main_models_neverlit.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
 
@@ -276,7 +282,10 @@ outreg2 using "$results/main_models_splittrt_neverlit.doc", append noni nocons d
 	
 capture quietly reghdfe ndvi trt1k trt2k trt3k temp precip c.trt#c.(plantation concession protected_area) if ever_lit == 0, cluster(commune year) absorb(cell_id year)
 outreg2 using "$results/main_models_splittrt_neverlit.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
-	
+
+capture quietly reghdfe ndvi trt1k trt2k trt3k temp precip c.trt#c.(road_distance protected_area) if ever_lit == 0, cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/main_models_splittrt_neverlit.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
+
 capture quietly reghdfe ndvi trt1k trt2k trt3k temp precip c.trt#c.(baseline_ndvi road_distance plantation concession protected_area) if ever_lit == 0, cluster(commune year) absorb(cell_id year)
 outreg2 using "$results/main_models_splittrt_neverlit.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
 
@@ -307,14 +316,92 @@ gen time_to_trt3k_dummy = (time_to_trt3k >= 0)
 
 drop year_min first_trt
 
-reghdfe ndvi time_to_trt1k c.time_to_trt1k#i.time_to_trt1k_dummy temp precip, cluster(commune year) absorb(cell_id year)
+reghdfe ndvi time_to_trt1k c.time_to_trt1k#i.time_to_trt1k_dummy temp precip, cluster(commune year) absorb(cell_id year) pool(10)
 outreg2 using "$results/time_to_trt.doc", replace noni nocons addtext("Year FEs", Y, "Grid cell FEs", Y)
 
-reghdfe ndvi time_to_trt2k c.time_to_trt2k#i.time_to_trt2k_dummy temp precip, cluster(commune year) absorb(cell_id year)
+reghdfe ndvi time_to_trt2k c.time_to_trt2k#i.time_to_trt2k_dummy temp precip, cluster(commune year) absorb(cell_id year) pool(10)
 outreg2 using "$results/time_to_trt.doc", append noni nocons addtext("Year FEs", Y, "Grid cell FEs", Y)
 
-reghdfe ndvi time_to_trt3k c.time_to_trt3k#i.time_to_trt3k_dummy temp precip, cluster(commune year) absorb(cell_id year)
+reghdfe ndvi time_to_trt3k c.time_to_trt3k#i.time_to_trt3k_dummy temp precip, cluster(commune year) absorb(cell_id year) pool(10)
 outreg2 using "$results/time_to_trt.doc", append noni nocons addtext("Year FEs", Y, "Grid cell FEs", Y)
+
+***
+
+capture quietly reghdfe ndvi trt temp precip ndvi_pretrend, cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/pretrend_models.doc", replace noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
+
+capture quietly reghdfe ndvi trt temp precip c.trt#c.(baseline_ndvi road_distance plantation concession protected_area) ndvi_pretrend, cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/pretrend_models.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
+
+rm "$results/pretrend_models.txt"
+
+***
+
+gen trt_dummy = (trt > 0)
+
+capture quietly cgmreg ndvi trt_dummy, cluster(commune year)
+outreg2 using "$results/main_models_dummytrt.doc", replace noni nocons addtext("Year FEs", N, "Grid cell FEs", N, "Climate Controls", N)
+	
+capture quietly reghdfe ndvi trt_dummy, cluster(commune year) absorb(year)
+outreg2 using "$results/main_models_dummytrt.doc", append noni nocons addtext("Year FEs", Y, "Grid cell FEs", N, "Climate Controls", N)
+	
+capture quietly reghdfe ndvi trt_dummy, cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/main_models_dummytrt.doc", append noni nocons addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", N)
+
+capture quietly reghdfe ndvi trt_dummy temp precip, cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/main_models_dummytrt.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
+	
+capture quietly reghdfe ndvi trt_dummy temp precip c.trt_dummy#c.baseline_ndvi, cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/main_models_dummytrt.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
+	
+capture quietly reghdfe ndvi trt_dummy temp precip c.trt_dummy#c.(plantation concession protected_area), cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/main_models_dummytrt.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
+	
+capture quietly reghdfe ndvi trt_dummy temp precip c.trt_dummy#c.(baseline_ndvi plantation concession protected_area), cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/main_models_dummytrt.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
+
+capture quietly reghdfe ndvi trt_dummy temp precip c.trt_dummy#c.(road_distance protected_area), cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/main_models_dummytrt.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
+
+capture quietly reghdfe ndvi trt_dummy temp precip c.trt_dummy#c.(baseline_ndvi road_distance plantation concession protected_area), cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/main_models_dummytrt.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
+
+rm "$results/main_models_dummytrt.txt"
+
+***
+
+gen trt_1kdummy = (trt1k > 0)
+gen trt_2kdummy = (trt2k > 0)
+gen trt_3kdummy = (trt3k > 0)
+
+capture quietly cgmreg ndvi trt_1kdummy trt_2kdummy trt_3kdummy, cluster(commune year)
+outreg2 using "$results/main_models_splitdummytrt.doc", replace noni nocons addtext("Year FEs", N, "Grid cell FEs", N, "Climate Controls", N)
+
+capture quietly reghdfe ndvi trt_1kdummy trt_2kdummy trt_3kdummy, cluster(commune year) absorb(year)
+outreg2 using "$results/main_models_splitdummytrt.doc", append noni nocons addtext("Year FEs", Y, "Grid cell FEs", N, "Climate Controls", N)
+	
+capture quietly reghdfe ndvi trt_1kdummy trt_2kdummy trt_3kdummy, cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/main_models_splitdummytrt.doc", append noni nocons addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", N)
+	
+capture quietly reghdfe ndvi trt_1kdummy trt_2kdummy trt_3kdummy temp precip, cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/main_models_splitdummytrt.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
+	
+capture quietly reghdfe ndvi trt_1kdummy trt_2kdummy trt_3kdummy temp precip c.trt#c.baseline_ndvi, cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/main_models_splitdummytrt.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
+
+capture quietly reghdfe ndvi trt_1kdummy trt_2kdummy trt_3kdummy temp precip c.trt#c.road_distance, cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/main_models_splitdummytrt.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
+	
+capture quietly reghdfe ndvi trt_1kdummy trt_2kdummy trt_3kdummy temp precip c.trt#c.(plantation concession protected_area), cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/main_models_splitdummytrt.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
+
+capture quietly reghdfe ndvi trt_1kdummy trt_2kdummy trt_3kdummy temp precip c.trt#c.(road_distance protected_area), cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/main_models_splitdummytrt.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
+	
+capture quietly reghdfe ndvi trt_1kdummy trt_2kdummy trt_3kdummy temp precip c.trt#c.(baseline_ndvi road_distance plantation concession protected_area), cluster(commune year) absorb(cell_id year)
+outreg2 using "$results/main_models_splitdummytrt.doc", append noni nocons drop(temp precip) addtext("Year FEs", Y, "Grid cell FEs", Y, "Climate Controls", Y)
+
+rm "$results/main_models_splitdummytrt.txt"
 
 
 
