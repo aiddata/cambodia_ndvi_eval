@@ -50,7 +50,7 @@ gen years_to_trt1 = year - first_trt
 
 levelsof years_to_trt1, loc(levels) sep()
 
-foreach l of local levels{
+foreach l of local levels {
 	local j = `l' + 30
 	local label `"`label' `j' "`l'" "'
 	}
@@ -65,6 +65,7 @@ drop if missing(years_to_trt1) | missing(temp) | missing(precip) | missing(commu
 drop province plantation concession protected_area road_distance trt trt1k trt2k trt3k ntl baseline_ndvi
 
 reghdfe ndvi ib30.years_to_trt1 temp precip, cluster(commune year) absorb(cell_id year) pool(10)
+
 
 coefplot, xline(5) yline(0) vertical omit base recast(line) ///
     color(blue) ciopts(recast(rline)  color(blue) lp(dash)) graphregion(color(white)) ///
