@@ -64,7 +64,7 @@ def getValuesAtPoint(indir, rasterfileList, pos, lon, lat, cell_id):
     del data, band
     return df
 
-grid = pd.read_csv(working_dir+'/empty_grid_cdb_new.csv')
+grid = pd.read_csv(working_dir+'/nn_grid_cdb.csv')
 
 ##################################################
 

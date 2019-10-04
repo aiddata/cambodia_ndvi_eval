@@ -117,7 +117,7 @@ mort2 = mort
 mort2['lat'] = list(subset2['latitude'])
 mort2['lon'] = list(subset2['longitude'])
 
-mort2.to_csv(working_dir+"/empty_grid_cdb_new.csv", index=False)
+mort2.to_csv(working_dir+"/nn_grid_cdb.csv", index=False)
 
 
 
