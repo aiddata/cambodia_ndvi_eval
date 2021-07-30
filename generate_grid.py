@@ -1,6 +1,6 @@
 
 # set working directory
-working_dir = '/sciclone/home20/cbaehr/cambodia_gie/data'
+working_dir = '/sciclone/home20/cbaehr/cambodia_gie/inputData'
 
 # overwrite output files?
 overwrite = True
@@ -59,7 +59,7 @@ grid = pd.DataFrame(df_list)
 if overwrite:
     grid.to_csv(working_dir+'/empty_grid.csv')
 
-# delete temporary objects
+# delete unneeded objects
 del polygon_data, ndvi_feature, ndvi_shape, prep_feat, coords, point_list, point_list_country, df_list
 
 

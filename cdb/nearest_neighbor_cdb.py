@@ -1,5 +1,6 @@
 
-working_dir = '/sciclone/home20/cbaehr/cambodia_gie/data'
+# set working directory
+working_dir = '/sciclone/home20/cbaehr/cambodia_gie/inputData'
 
 import os
 import math
@@ -10,12 +11,13 @@ import numpy as np
 from shapely.geometry import Point
 from scipy.spatial import cKDTree
 
+# define snap function
 def snap(val, interval):
     if interval > 1:
         raise ValueError("Interval must be less than one")
     return round(np.floor( val* 1/interval)) / (1/interval)
 
-
+# define nearest neighbor class
 class NN():
     """Use KDTree to find NearestNeighbor values for a given location
 
@@ -83,40 +85,49 @@ class NN():
             val.append(min_index)
         return val
 
+# load in CDB data
 points_csv = pd.read_csv(working_dir+"/cdb_spatial.csv")
 
+# create nearest neighbor tree
 nn = NN(df=points_csv, k=1)
-
 nn.build_tree()
 
+# identify CDB columns to retain
 acled_field = ["infant_mort.2008", "infant_mort.2009", "infant_mort.2010", "infant_mort.2011", "infant_mort.2012", "infant_mort.2013", "infant_mort.2014", "infant_mort.2015", "infant_mort.2016"]
 
+# load in empty grid
 data = pd.read_csv(working_dir+"/empty_grid_cdb.csv")
-
 subset2 = data[['lat', 'lon']]
 subset2.columns = ['latitude', 'longitude']
 
 #locs = [tuple(x) for x in subset.values]
 
+# empty list to store CDB data for each grid cell
 loc_val = []
 
+# iterate through each grid cell, pulling data from the nearest CDB village
 for ix,row in subset2.iterrows():
     loc=(row.longitude, row.latitude)
     x=nn.query(loc=loc, k=1, field=acled_field)
     loc_val.append(x)
 
+# convert list to dataframe
 mort = pd.DataFrame(loc_val)
 
+# rename columns in CDB grid
 mort.columns = ["mort08", "mort09", "mort10", "mort11", "mort12", "mort13", "mort14", "mort15", "mort16", "distance", "index"]
 
+# add cell_id column to CDB grid
 mort['cell_id'] = list(data.cell_id)
 
 # distance measure produces sqrt((x2-x1)^2+(y2-y1)^2)
 
+# add lat and long columns to CDB grid
 mort2 = mort
 mort2['lat'] = list(subset2['latitude'])
 mort2['lon'] = list(subset2['longitude'])
 
+# write CDB grid to csv file
 mort2.to_csv(working_dir+"/nn_grid_cdb.csv", index=False)
 
 
